@@ -1,0 +1,3 @@
+accessWidener   v2  named
+accessible method net/minecraft/server/world/ThreadedAnvilChunkStorage getChunkHolder (J)Lnet/minecraft/server/world/ChunkHolder;
+accessible method net/minecraft/server/world/ServerChunkManager getChunkFuture (IILnet/minecraft/world/chunk/ChunkStatus;Z)Ljava/util/concurrent/CompletableFuture;

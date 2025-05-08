@@ -1,0 +1,27 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "simplecinematic:block/camera_point"
+    },
+    "facing=east": {
+      "model": "simplecinematic:block/camera_point",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "simplecinematic:block/camera_point",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "simplecinematic:block/camera_point",
+      "y": 270
+    },
+    "facing=up": {
+      "model": "simplecinematic:block/camera_point",
+      "x": 270
+    },
+    "facing=down": {
+      "model": "simplecinematic:block/camera_point",
+      "x": 90
+    }
+  }
+}
