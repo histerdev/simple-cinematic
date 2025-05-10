@@ -206,7 +206,7 @@ public class CameraPointBlockEntity extends BlockEntity implements ExtendedScree
         this.position = nbt.getInt("Position");
         this.yaw = nbt.getFloat("Yaw");
         this.pitch = nbt.getFloat("Pitch");
-        this.pitch = nbt.getFloat("Roll");
+        this.roll = nbt.getFloat("Roll");
         this.shake = nbt.getFloat("Shake");
 
         this.duration = nbt.getDouble("Duration");
