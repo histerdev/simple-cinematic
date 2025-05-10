@@ -1,5 +1,6 @@
 package dev.backd00r.simplecinematic.manager;
 
+import dev.backd00r.simplecinematic.accessor.CameraMixinAccessor;
 import dev.backd00r.simplecinematic.mixin.CameraAccessorMixin;
 import dev.backd00r.simplecinematic.util.EasingType;
 import net.fabricmc.api.EnvType;
@@ -169,6 +170,10 @@ public class CameraManager {
     }
 
     public static void updateCameraPosition(Camera camera, float tickDelta) {
+        if (!(camera instanceof CameraMixinAccessor accessor)) {
+            return; // Si la cámara no implementa la interfaz, no hacemos nada
+        }
+
         if (!moving) {
             if (startPosition != null || targetPosition != null || cameraPosition != null) {
                 startPosition = null; targetPosition = null; cameraPosition = null;
@@ -201,7 +206,7 @@ public class CameraManager {
             cameraPosition = startPosition.lerp(targetPosition, progress);
             currentYaw = MathHelper.lerpAngleDegrees((float) progress, startYaw, targetYawLerp);
             currentPitch = MathHelper.lerp((float) progress, startPitch, targetPitchLerp);
-            currentRoll = MathHelper.lerp((float) progress, startRoll, targetRollLerp); // <--- NUEVO
+            currentRoll = MathHelper.lerp(tickDelta, currentRoll, finalSegmentRoll);
             currentShake = targetShakeLerp; // shake SIEMPRE el del destino
 
             if (moving && !finishedMovement) {
@@ -294,6 +299,9 @@ public class CameraManager {
             resetCamera();
             return;
         }
+        if (!(camera instanceof CameraMixinAccessor accessorroll)) {
+            return; // Si la cámara no implementa la interfaz, no hacemos nada
+        }
         if (!(camera instanceof CameraAccessorMixin accessor)) {
             LOGGER.error("CameraManager FATAL: Camera is not CameraAccessorMixin! Resetting.");
             resetCamera();
@@ -331,9 +339,8 @@ public class CameraManager {
             accessor.invokeSetPos(shakenPosition);
             accessor.invokeSetRotation(shakenYaw, shakenPitch);
             // Usa la interfaz RollAccessor para manipular el roll agregado por el mixin
-            if (camera instanceof dev.backd00r.simplecinematic.accessor.RollAccessor rollAccessor) {
-                rollAccessor.setRoll(shakenRoll);
-            }
+            accessorroll.setRoll(currentRoll);
+
         } catch (Exception e) {
             LOGGER.error("Exception invoking CameraAccessorMixin! Resetting.", e);
             resetCamera();
