@@ -65,6 +65,8 @@ public class ServerNetworking {
             int position = buf.readInt();
             float yaw = buf.readFloat();
             float pitch = buf.readFloat();
+            float roll = buf.readFloat(); // <--- ROLL después de pitch
+            float shake = buf.readFloat(); // <-- SHAKE después de roll
             double duration = buf.readDouble();
             double stayDuration = buf.readDouble();
             boolean rotateToNext = buf.readBoolean();
@@ -78,6 +80,8 @@ public class ServerNetworking {
                         cameraPoint.setPosition(position);
                         cameraPoint.setYaw(yaw);
                         cameraPoint.setPitch(pitch);
+                        cameraPoint.setRoll(roll);   // <--- Asigna roll
+                        cameraPoint.setShake(shake); // <-- Asignar shake
                         cameraPoint.setDuration(duration);
                         cameraPoint.setStayDuration(stayDuration);
                         cameraPoint.setRotateToNext(rotateToNext);
@@ -257,6 +261,8 @@ public class ServerNetworking {
             buf.writeInt(point.position);
             buf.writeFloat(point.rawYaw);
             buf.writeFloat(point.rawPitch);
+            buf.writeFloat(point.rawRoll);  // <--- ROLL
+            buf.writeFloat(point.rawShake); // <-- SHAKE después de roll
             buf.writeDouble(point.duration);
             buf.writeDouble(point.stayDuration);
             buf.writeBoolean(point.useBlockFacing);
@@ -289,6 +295,8 @@ public class ServerNetworking {
                 preload.writeInt(point.position);
                 preload.writeFloat(point.rawYaw);
                 preload.writeFloat(point.rawPitch);
+                preload.writeFloat(point.rawRoll);  // <--- ROLL
+                preload.writeFloat(point.rawShake); // <-- SHAKE después de roll
                 preload.writeDouble(point.duration);
                 preload.writeDouble(point.stayDuration);
                 preload.writeBoolean(point.useBlockFacing);

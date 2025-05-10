@@ -22,6 +22,9 @@ public class CameraPointScreenHandler extends ScreenHandler {
     private int position;
     private float yaw;
     private float pitch;
+    private float roll;  // <--- NUEVO, agregar campo roll
+    private float shake; // <--- SHAKE
+
     private double duration;
     private double stayDuration;
     private boolean rotateToNext; // <--- NUEVA VARIABLE
@@ -30,35 +33,37 @@ public class CameraPointScreenHandler extends ScreenHandler {
     // Constructor del Servidor
     public CameraPointScreenHandler(int syncId, PlayerInventory playerInventory, CameraPointBlockEntity blockEntity) {
         super(ModScreenHandlers.CAMERA_POINT_SCREEN_HANDLER, syncId);
-        this.blockEntity = blockEntity; // Guardar referencia (solo servidor)
+        this.blockEntity = blockEntity;
         this.context = ScreenHandlerContext.create(blockEntity.getWorld(), blockEntity.getPos());
 
-        // Inicializar valores desde el BlockEntity real
         this.channel = blockEntity.getChannel();
         this.position = blockEntity.getPosition();
         this.yaw = blockEntity.getYaw();
         this.pitch = blockEntity.getPitch();
+        this.roll = blockEntity.getRoll(); // <--- LEER DEL BE
+        this.shake = blockEntity.getShake(); // <--- LEER DEL BE
         this.duration = blockEntity.getDuration();
         this.stayDuration = blockEntity.getStayDuration();
-        this.rotateToNext = blockEntity.shouldRotateToNext(); // <--- LEER DEL BE
-        this.blockPos = blockEntity.getPos(); // Guardar posición
+        this.rotateToNext = blockEntity.shouldRotateToNext();
+        this.blockPos = blockEntity.getPos();
     }
 
     // Constructor del Cliente
     public CameraPointScreenHandler(int syncId, PlayerInventory playerInventory, PacketByteBuf buf) {
         super(ModScreenHandlers.CAMERA_POINT_SCREEN_HANDLER, syncId);
-        this.blockEntity = null; // No hay BE en cliente
+        this.blockEntity = null;
         this.context = ScreenHandlerContext.EMPTY;
 
-        // Leer los datos iniciales enviados por writeScreenOpeningData EN EL ORDEN CORRECTO
         this.blockPos = buf.readBlockPos();
         this.channel = buf.readInt();
         this.position = buf.readInt();
         this.yaw = buf.readFloat();
         this.pitch = buf.readFloat();
+        this.roll = buf.readFloat(); // <--- LEER DESPUÉS DE pitch
+        this.shake = buf.readFloat(); // <--- LEER DESPUÉS DE roll
         this.duration = buf.readDouble();
         this.stayDuration = buf.readDouble();
-        this.rotateToNext = buf.readBoolean(); // <--- LEER DEL BUFFER
+        this.rotateToNext = buf.readBoolean();
     }
 
     // --- Getters para la Pantalla (Screen) ---
@@ -69,6 +74,9 @@ public class CameraPointScreenHandler extends ScreenHandler {
     public int getPosition() { return position; }
     public float getYaw() { return yaw; }
     public float getPitch() { return pitch; }
+    public float getRoll() { return roll; } // <--- NUEVO Getter
+    public float getShake() { return shake; } // <--- GETTER SHAKE
+
     public double getDuration() { return duration; }
     public double getStayDuration() { return stayDuration; }
     public boolean shouldRotateToNext() { return rotateToNext; } // <--- NUEVO Getter
@@ -87,6 +95,9 @@ public class CameraPointScreenHandler extends ScreenHandler {
     public void setPitch(float pitch) {
         this.pitch = Math.max(-90.0f, Math.min(90.0f, pitch)); // Validar también aquí
     }
+    public void setRoll(float roll) { this.roll = Math.max(-180.0f, Math.min(180.0f, roll)); } // <--- NUEVO Setter
+    public void setShake(float shake) { this.shake = Math.max(0.0f, shake); } // <--- SETTER SHAKE
+
     public void setDuration(double duration) {
         this.duration = Math.max(0.1, duration);
     }

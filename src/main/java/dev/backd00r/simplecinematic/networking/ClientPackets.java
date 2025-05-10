@@ -48,19 +48,21 @@ public class ClientPackets {
                     int pointPosition = buf.readInt();
                     float rawYaw = buf.readFloat();
                     float rawPitch = buf.readFloat();
+                    float rawRoll = buf.readFloat(); // <--- ROLL después de pitch
+                    float shake = buf.readFloat();
                     double duration = buf.readDouble();
                     double stayDuration = buf.readDouble();
                     boolean useBlockFacing = buf.readBoolean();
                     Direction blockFacing = buf.readEnumConstant(Direction.class);
                     boolean rotateToNext = buf.readBoolean();
                     receivedPoints.add(new CameraPathManager.CameraPointData(
-                            pos.toImmutable(), pointChannel, pointPosition, rawYaw, rawPitch, duration, stayDuration, blockFacing, rotateToNext
+                            pos.toImmutable(), pointChannel, pointPosition, rawYaw, rawPitch, rawRoll, shake, duration, stayDuration, blockFacing, rotateToNext
                     ));
                 }
                 client.execute(() -> {
                     CameraPathManager.clearChannelPath(channel);
                     for (CameraPathManager.CameraPointData point : receivedPoints) {
-                        CameraPathManager.registerCameraPoint(point.pos, point.channel, point.position, point.yaw, point.pitch, point.duration, point.stayDuration, point.blockDirection, point.rotateToNext);
+                        CameraPathManager.registerCameraPoint(point.pos, point.channel, point.position, point.yaw, point.pitch, point.roll, point.shake, point.duration, point.stayDuration, point.blockDirection, point.rotateToNext);
                     }
                     CameraPathManager.requestNeededChunks(true);
                     waitForChunksAndNotifyServer(client, channel);
@@ -69,8 +71,6 @@ public class ClientPackets {
                 e.printStackTrace();
             }
         });
-
-        // START: Recibe la señal de arranque sincronizado
         ClientPlayNetworking.registerGlobalReceiver(ModPackets.PLAY_CINEMATIC_START, (client, handler, buf, responseSender) -> {
             int channel = buf.readInt();
             int startPosition = buf.readInt();
@@ -82,24 +82,25 @@ public class ClientPackets {
                 int pointPosition = buf.readInt();
                 float rawYaw = buf.readFloat();
                 float rawPitch = buf.readFloat();
+                float rawRoll = buf.readFloat(); // <--- ROLL después de pitch
+                float shake = buf.readFloat();
                 double duration = buf.readDouble();
                 double stayDuration = buf.readDouble();
                 boolean useBlockFacing = buf.readBoolean();
                 Direction blockFacing = buf.readEnumConstant(Direction.class);
                 boolean rotateToNext = buf.readBoolean();
                 receivedPoints.add(new CameraPathManager.CameraPointData(
-                        pos.toImmutable(), pointChannel, pointPosition, rawYaw, rawPitch, duration, stayDuration, blockFacing, rotateToNext
+                        pos.toImmutable(), pointChannel, pointPosition, rawYaw, rawPitch, rawRoll, shake, duration, stayDuration, blockFacing, rotateToNext
                 ));
             }
             client.execute(() -> {
                 CameraPathManager.clearChannelPath(channel);
                 for (CameraPathManager.CameraPointData point : receivedPoints) {
-                    CameraPathManager.registerCameraPoint(point.pos, point.channel, point.position, point.yaw, point.pitch, point.duration, point.stayDuration, point.blockDirection, point.rotateToNext);
+                    CameraPathManager.registerCameraPoint(point.pos, point.channel, point.position, point.yaw, point.pitch, point.roll, point.shake, point.duration, point.stayDuration, point.blockDirection, point.rotateToNext);
                 }
                 CameraPathManager.playPathFromPosition(channel, startPosition);
             });
         });
-
 
         // --- REMOVED ---
         // ClientPlayNetworking.registerGlobalReceiver(ModPackets.PLAY_CINEMATIC, ... ) // Replaced by PREPARE/START

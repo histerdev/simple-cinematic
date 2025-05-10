@@ -35,6 +35,9 @@ public class CameraPointBlockEntity extends BlockEntity implements ExtendedScree
     private int position = 1;
     private float yaw = 0.0f;
     private float pitch = 0.0f;
+    private float roll = 0.0f;
+    private float shake = 0.0f;
+
     private double duration = 2.0;
     private double stayDuration = 0.0;
     private boolean useBlockFacing = true;
@@ -48,6 +51,10 @@ public class CameraPointBlockEntity extends BlockEntity implements ExtendedScree
     public int getPosition() { return position; }
     public float getYaw() { return yaw; }
     public float getPitch() { return pitch; }
+    public float getRoll() { return roll; }
+
+    public float getShake() { return shake; }
+
     public double getDuration() { return duration; }
     public double getStayDuration() { return stayDuration; }
     public boolean isUseBlockFacing() { return useBlockFacing; }
@@ -69,6 +76,8 @@ public class CameraPointBlockEntity extends BlockEntity implements ExtendedScree
                     getPosition(),
                     getYaw(),
                     getPitch(),
+                    getRoll(),
+                    getShake(),
                     getDuration(),
                     getStayDuration(),
                     getBlockDirection(),
@@ -129,9 +138,19 @@ public class CameraPointBlockEntity extends BlockEntity implements ExtendedScree
         updatePersistentRegistry();
         markDirtyAndUpdate();
     }
+    public void setRoll(float roll) {
+        this.roll = roll;
+        updatePersistentRegistry();
+        markDirtyAndUpdate();
+    }
+    public void setShake(float shake) {
+        this.shake = Math.max(0.0f, Math.min(100.0f, shake));
+        updatePersistentRegistry();
+        markDirtyAndUpdate();
+    }
 
     public void setDuration(double duration) {
-        this.duration = Math.max(0.1, duration);
+        this.duration = Math.max(0.0, duration);
         updatePersistentRegistry();
         markDirtyAndUpdate();
     }
@@ -170,6 +189,8 @@ public class CameraPointBlockEntity extends BlockEntity implements ExtendedScree
         nbt.putInt("Position", this.position);
         nbt.putFloat("Yaw", this.yaw);
         nbt.putFloat("Pitch", this.pitch);
+        nbt.putFloat("Roll", this.roll);
+        nbt.putFloat("Shake", this.shake);
         nbt.putDouble("Duration", this.duration);
         nbt.putDouble("StayDuration", this.stayDuration);
         nbt.putBoolean("UseBlockFacing", this.useBlockFacing);
@@ -185,6 +206,9 @@ public class CameraPointBlockEntity extends BlockEntity implements ExtendedScree
         this.position = nbt.getInt("Position");
         this.yaw = nbt.getFloat("Yaw");
         this.pitch = nbt.getFloat("Pitch");
+        this.pitch = nbt.getFloat("Roll");
+        this.shake = nbt.getFloat("Shake");
+
         this.duration = nbt.getDouble("Duration");
         this.stayDuration = nbt.getDouble("StayDuration");
         this.useBlockFacing = nbt.getBoolean("UseBlockFacing");
@@ -192,7 +216,7 @@ public class CameraPointBlockEntity extends BlockEntity implements ExtendedScree
 
         if (world != null && world.isClient) {
             CameraPathManager.registerOrUpdateCameraPointClient(
-                    this.pos, this.channel, this.position, this.yaw, this.pitch,
+                    this.pos, this.channel, this.position, this.yaw, this.pitch, this.roll, this.shake,
                     this.duration, this.stayDuration, getBlockDirection(), this.rotateToNext
             );
         }
@@ -227,6 +251,8 @@ public class CameraPointBlockEntity extends BlockEntity implements ExtendedScree
         packetByteBuf.writeInt(this.position);
         packetByteBuf.writeFloat(this.yaw);
         packetByteBuf.writeFloat(this.pitch);
+        packetByteBuf.writeFloat(this.roll);
+        packetByteBuf.writeFloat(this.shake);
         packetByteBuf.writeDouble(this.duration);
         packetByteBuf.writeDouble(this.stayDuration);
         packetByteBuf.writeBoolean(this.rotateToNext);

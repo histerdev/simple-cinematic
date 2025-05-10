@@ -24,8 +24,12 @@ public class ModScreenHandlers {
                         BlockPos pos = buf.readBlockPos();
                         int channel = buf.readInt();
                         int position = buf.readInt();
-                        float pitch = buf.readFloat();
                         float yaw = buf.readFloat();
+
+                        float pitch = buf.readFloat();
+                        float roll = buf.readFloat();
+
+                        float shake = buf.readFloat();
                         double duration = buf.readDouble();
                         double stayDuration = buf.readDouble(); // Leer stayDuration del buffer
                         boolean shouldRotateToNext = buf.readBoolean();
@@ -34,8 +38,11 @@ public class ModScreenHandlers {
                         newBuf.writeBlockPos(pos);
                         newBuf.writeInt(channel);
                         newBuf.writeInt(position);
-                        newBuf.writeFloat(pitch);  // Comprobar el orden: los valores están en el orden correcto
                         newBuf.writeFloat(yaw);    // Comprobar el orden: los valores están en el orden correcto
+                        newBuf.writeFloat(pitch);
+                        newBuf.writeFloat(roll);
+                        newBuf.writeFloat(shake);    // Comprobar el orden: los valores están en el orden correcto
+
                         newBuf.writeDouble(duration);
                         newBuf.writeDouble(stayDuration); // Incluir stayDuration en el nuevo buffer
                         newBuf.writeBoolean(shouldRotateToNext); // Incluir stayDuration en el nuevo buffer

@@ -25,12 +25,9 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-// import net.minecraft.util.math.Direction; // Ya no es necesario aquí
 
 import java.util.*;
-// import java.util.Comparator; // Ya no es necesario aquí
 import java.util.stream.Collectors;
-// import java.util.stream.Collectors; // Ya no es necesario aquí
 
 public class CinematicCommand {
 
@@ -81,7 +78,7 @@ public class CinematicCommand {
         List<CameraPointDataServer> allPoints = pointsFromRegistry.stream()
                 .map(data -> new CameraPointDataServer(
                         data.pos, data.channel, data.position,
-                        data.yaw, data.pitch, data.duration, data.stayDuration,
+                        data.yaw, data.pitch, data.roll, data.shake, data.duration, data.stayDuration,
                         data.blockDirection != null ? false : true, // o data.useBlockFacing si existe
                         data.blockDirection,
                         data.rotateToNext
@@ -108,19 +105,23 @@ public class CinematicCommand {
         public final int position;
         public final float rawYaw;
         public final float rawPitch;
+        public final float rawRoll;
+        public final float rawShake;
         public final double duration;
         public final double stayDuration;
         public final boolean useBlockFacing;
         public final Direction blockFacing;
         public final boolean rotateToNext;
 
-        public CameraPointDataServer(BlockPos pos, int channel, int position, float rawYaw, float rawPitch,
+        public CameraPointDataServer(BlockPos pos, int channel, int position, float rawYaw, float rawPitch, float rawRoll, float rawShake,
                                      double duration, double stayDuration, boolean useBlockFacing, Direction blockFacing, boolean rotateToNext) {
             this.pos = pos;
             this.channel = channel;
             this.position = position;
             this.rawYaw = rawYaw;
             this.rawPitch = rawPitch;
+            this.rawRoll = rawRoll;
+            this.rawShake = rawShake;
             this.duration = duration;
             this.stayDuration = stayDuration;
             this.useBlockFacing = useBlockFacing;

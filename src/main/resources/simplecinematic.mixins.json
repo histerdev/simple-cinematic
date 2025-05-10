@@ -5,11 +5,14 @@
 	"client": [
 		"CameraAccessorMixin",
 		"CameraMixin",
-		"GameRendererMixin"
+		"GameRendererMixin",
+		"CameraRollMixin",
+		"CameraMixinRoll"
 	],
 	"mixins": [
 		"ExampleMixin",
-		"PlayerEventsMixin"
+		"PlayerEventsMixin",
+		"ClientChunkManagerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

@@ -63,32 +63,34 @@ public class CameraPathManager {
 
     private static final double INITIAL_SEGMENT_FIXED_SECONDS = 0.75;
 
+    // --- MÉTODOS PARA REGISTRO DE PUNTOS (AGREGADO ROLL) ---
+
     public static void registerCameraPoint(BlockPos pos, int channel, int position,
-                                           float yaw, float pitch, double duration,
+                                           float yaw, float pitch, float roll, float shake, double duration,
                                            double stayDuration, Direction blockFacing, boolean rotateToNext) {
         if (!MinecraftClient.getInstance().isOnThread()) {
-            MinecraftClient.getInstance().execute(() -> registerCameraPoint(pos, channel, position, yaw, pitch, duration, stayDuration, blockFacing, rotateToNext));
+            MinecraftClient.getInstance().execute(() -> registerCameraPoint(pos, channel, position, yaw, pitch, roll, shake, duration, stayDuration, blockFacing, rotateToNext));
             return;
         }
-        registerOrUpdateCameraPointInternal(pos, channel, position, yaw, pitch, duration, stayDuration, blockFacing, rotateToNext, "Command/Network");
+        registerOrUpdateCameraPointInternal(pos, channel, position, yaw, pitch, roll, shake, duration, stayDuration, blockFacing, rotateToNext, "Command/Network");
     }
 
     public static void registerOrUpdateCameraPointClient(BlockPos pos, int channel, int position,
-                                                         float yaw, float pitch, double duration,
+                                                         float yaw, float pitch, float roll, float shake, double duration,
                                                          double stayDuration, Direction blockFacing, boolean rotateToNext) {
         if (!MinecraftClient.getInstance().isOnThread()) {
-            MinecraftClient.getInstance().execute(() -> registerOrUpdateCameraPointClient(pos, channel, position, yaw, pitch, duration, stayDuration, blockFacing, rotateToNext));
+            MinecraftClient.getInstance().execute(() -> registerOrUpdateCameraPointClient(pos, channel, position, yaw, pitch, roll, shake, duration, stayDuration, blockFacing, rotateToNext));
             return;
         }
-        registerOrUpdateCameraPointInternal(pos, channel, position, yaw, pitch, duration, stayDuration, blockFacing, rotateToNext, "Client GUI Update/NBT");
+        registerOrUpdateCameraPointInternal(pos, channel, position, yaw, pitch, roll, shake, duration, stayDuration, blockFacing, rotateToNext, "Client GUI Update/NBT");
     }
 
     private static synchronized void registerOrUpdateCameraPointInternal(BlockPos pos, int channel, int position,
-                                                                         float yaw, float pitch, double duration,
+                                                                         float yaw, float pitch, float roll, float shake, double duration,
                                                                          double stayDuration, Direction blockFacing,
                                                                          boolean rotateToNext, String source) {
         Map<Integer, CameraPointData> positionMap = channelPoints.computeIfAbsent(channel, k -> new TreeMap<>());
-        CameraPointData pointData = new CameraPointData(pos.toImmutable(), channel, position, yaw, pitch, duration, stayDuration, blockFacing, rotateToNext);
+        CameraPointData pointData = new CameraPointData(pos.toImmutable(), channel, position, yaw, pitch, roll, shake, duration, stayDuration, blockFacing, rotateToNext);
         positionMap.put(position, pointData);
     }
 
@@ -186,6 +188,17 @@ public class CameraPathManager {
         LOGGER.info("Calculating required chunks for the path ({} points)...", currentPathPoints.size());
         requiredChunks = calculateRequiredChunksForPath(currentPathPoints);
         LOGGER.info("Total unique chunks required: {}", requiredChunks.size());
+
+        // FIX: Abortar si no hay chunks requeridos
+        if (requiredChunks.isEmpty()) {
+            LOGGER.error("No se calcularon chunks requeridos para la cinemática. Abortando.");
+            if (client.player != null) {
+                client.player.sendMessage(Text.literal("§cError: No se pudieron calcular los chunks requeridos para la cinemática."), false);
+            }
+            clearAllPaths();
+            return;
+        }
+
         CinematicCameraState.setCameraPos(Vec3d.ofCenter(currentPathPoints.get(0).pos));
         CinematicCameraState.setCinematicActive(true);
 
@@ -305,12 +318,15 @@ public class CameraPathManager {
         }
 
         double pointStayDuration = Math.max(currentPoint.stayDuration, 0.0);
-        float finalTargetYaw, finalTargetPitch;
-        boolean useManualRotation = currentPoint.yaw != 0 || currentPoint.pitch != 0;
+        float finalTargetYaw, finalTargetPitch, finalTargetRoll;
+        boolean useManualRotation = currentPoint.yaw != 0 || currentPoint.pitch != 0 || currentPoint.roll != 0;
         boolean maintainRotationDuringMove;
 
         if (useManualRotation) {
-            finalTargetYaw = currentPoint.yaw; finalTargetPitch = currentPoint.pitch; maintainRotationDuringMove = false;
+            finalTargetYaw = currentPoint.yaw;
+            finalTargetPitch = currentPoint.pitch;
+            finalTargetRoll = currentPoint.roll;
+            maintainRotationDuringMove = false;
         } else {
             boolean shouldLookAtNext = currentPoint.rotateToNext && nextPoint != null;
             if (shouldLookAtNext) {
@@ -318,22 +334,38 @@ public class CameraPathManager {
                 Vec3d currentVec = Vec3d.ofCenter(currentPoint.pos); Vec3d nextVec = Vec3d.ofCenter(nextPoint.pos);
                 Vec3d directionToNext = nextVec.subtract(currentVec).normalize();
                 if (directionToNext.lengthSquared() < 1.0E-6) {
-                    finalTargetYaw = CameraManager.getYaw(); finalTargetPitch = CameraManager.getPitch();
+                    finalTargetYaw = CameraManager.getYaw();
+                    finalTargetPitch = CameraManager.getPitch();
+                    finalTargetRoll = CameraManager.getRoll();
                 } else {
                     finalTargetYaw = (float) (MathHelper.atan2(directionToNext.z, directionToNext.x) * (180.0 / Math.PI)) - 90.0f;
                     finalTargetPitch = (float) (-Math.asin(directionToNext.y) * (180.0 / Math.PI));
                     finalTargetPitch = MathHelper.clamp(finalTargetPitch, -90.0f, 90.0f);
+                    finalTargetRoll = 0.0f;
                 }
             } else {
-                maintainRotationDuringMove = true; finalTargetYaw = getYawFromDirection(currentPoint.blockDirection); finalTargetPitch = 0;
+                maintainRotationDuringMove = true;
+                finalTargetYaw = getYawFromDirection(currentPoint.blockDirection);
+                finalTargetPitch = 0;
+                finalTargetRoll = 0;
             }
         }
 
         LOGGER.info("[DIAGNOSTIC] Calling startCameraMovement for segment -> index {}. FINAL DURATION PASSED: {} seconds", currentPointIndex, segmentDuration);
 
         CameraManager.startCameraMovement(
-                currentPoint.pos, segmentDuration, finalTargetYaw, finalTargetPitch, false, EasingType.EASE_IN_OUT,
-                pointStayDuration, currentPoint.blockDirection, currentPointIndex == 0, maintainRotationDuringMove
+                currentPoint.pos,
+                segmentDuration,
+                finalTargetYaw,
+                finalTargetPitch,
+                finalTargetRoll,
+                currentPoint.shake,
+                false, // followPlayerTarget
+                EasingType.EASE_IN_OUT,
+                pointStayDuration,
+                currentPoint.blockDirection,
+                currentPointIndex == 0,
+                maintainRotationDuringMove
         );
     }
 
@@ -510,24 +542,33 @@ public class CameraPathManager {
     }
     public static boolean isPreviewing() { return isPreviewing; }
 
+    // --------------------------------------------------
+    //                CAMERA POINT DATA
+    // --------------------------------------------------
     public static class CameraPointData {
         public final BlockPos pos;
         public final int channel;
         public final int position;
         public final float yaw;
         public final float pitch;
+        public final float roll;
+        public final float shake;
+
         public final double duration;
         public final double stayDuration;
         public final Direction blockDirection;
         public final boolean rotateToNext;
 
-        public CameraPointData(BlockPos pos, int channel, int position, float yaw, float pitch,
+        public CameraPointData(BlockPos pos, int channel, int position, float yaw, float pitch, float roll, float shake,
                                double duration, double stayDuration, Direction blockDirection, boolean rotateToNext) {
             this.pos = pos;
             this.channel = channel;
             this.position = position;
             this.yaw = yaw;
             this.pitch = pitch;
+            this.roll = roll;
+            this.shake = shake;
+
             this.duration = duration;
             this.stayDuration = stayDuration;
             this.blockDirection = blockDirection;
@@ -536,8 +577,8 @@ public class CameraPathManager {
 
         @Override
         public String toString() {
-            return String.format(Locale.US, "CameraPointData{pos=%s, ch=%d, pos=%d, yaw=%.1f, pitch=%.1f, dur=%.1f, stay=%.1f, dir=%s, rotNext=%b}",
-                    pos, channel, position, yaw, pitch, duration, stayDuration, blockDirection, rotateToNext);
+            return String.format(Locale.US, "CameraPointData{pos=%s, ch=%d, pos=%d, yaw=%.1f, pitch=%.1f, roll=%.1f, dur=%.1f, stay=%.1f, dir=%s, rotNext=%b, shake=%.2f}",
+                    pos, channel, position, yaw, pitch, roll, duration, stayDuration, blockDirection, rotateToNext, shake);
         }
     }
 }

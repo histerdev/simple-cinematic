@@ -25,37 +25,42 @@ public class CameraPointScreen extends HandledScreen<CameraPointScreenHandler> {
     private TextFieldWidget positionField;
     private TextFieldWidget yawField;
     private TextFieldWidget pitchField;
+    private TextFieldWidget rollField; // <--- NUEVO
+    private TextFieldWidget shakeField;
+
     private TextFieldWidget durationField;
     private TextFieldWidget stayDurationField;
     private ButtonWidget rotateToNextToggle;
 
-    // Botones +/- (sin cambios en declaración)
+    // Botones +/-
     private ButtonWidget increaseStayDurationButton, decreaseStayDurationButton;
     private ButtonWidget increaseChannelButton, decreaseChannelButton;
     private ButtonWidget increasePositionButton, decreasePositionButton;
     private ButtonWidget increaseYawButton, decreaseYawButton;
     private ButtonWidget increasePitchButton, decreasePitchButton;
+    private ButtonWidget increaseRollButton, decreaseRollButton; // <--- NUEVO
+    private ButtonWidget increaseShakeButton, decreaseShakeButton;
+
     private ButtonWidget increaseDurationButton, decreaseDurationButton;
 
-    // Constantes de Layout - Ajustadas para nuevo diseño
+    // Constantes de Layout
     private static final int BUTTON_WIDTH = 20;
     private static final int BUTTON_HEIGHT = 20;
-    private static final int FIELD_WIDTH = 50; // Mantenido
-    private static final int FIELD_HEIGHT = 18; // Altura TextField
-    private static final int LABEL_COLOR = 0xFFFFFF; // Blanco
-    private static final int LABEL_Y_OFFSET = -10; // Offset Y de la etiqueta RELATIVO AL CAMPO (encima)
-    private static final int ROW_SPACING = 28; // Espacio vertical TOTAL entre filas de controles (incluye etiqueta+campo+espacio)
-    private static final int CONTROL_SPACING_X = 3; // Espacio horizontal botón <-> campo
-    private static final int TOGGLE_BUTTON_WIDTH = 60; // Ancho botón Sí/No
-    private static final int TOP_MARGIN = 25; // Margen superior antes del primer control
-
+    private static final int FIELD_WIDTH = 50;
+    private static final int FIELD_HEIGHT = 18;
+    private static final int LABEL_COLOR = 0xFFFFFF;
+    private static final int LABEL_Y_OFFSET = -10;
+    private static final int ROW_SPACING = 28;
+    private static final int CONTROL_SPACING_X = 3;
+    private static final int TOGGLE_BUTTON_WIDTH = 60;
+    private static final int TOP_MARGIN = 25;
 
     private final BlockPos blockPos;
 
     public CameraPointScreen(CameraPointScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
         this.backgroundWidth = 176;
-        this.backgroundHeight = 260; // <-- USAR LA ALTURA CORRECTA DE LA TEXTURA
+        this.backgroundHeight = 288; // <-- Aumentar altura para fila extra de roll
 
         BlockPos posFromHandler = handler.getBlockPos();
         if (posFromHandler == null) {
@@ -64,101 +69,101 @@ public class CameraPointScreen extends HandledScreen<CameraPointScreenHandler> {
         } else {
             this.blockPos = posFromHandler;
         }
-        // No es necesario titleY aquí si no dibujamos el título manualmente
-        // this.titleY = 6; // Ajustar si es necesario
     }
-
 
     @Override
     protected void init() {
         super.init();
-        // Calcular coordenadas base
         int x = (this.width - this.backgroundWidth) / 2;
         int y = (this.height - this.backgroundHeight) / 2;
 
-        // Calcular X para centrar el campo de texto
         int fieldX = x + this.backgroundWidth / 2 - FIELD_WIDTH / 2;
-        // Calcular X para los botones +/- relativos al campo
         int decreaseButtonX = fieldX - BUTTON_WIDTH - CONTROL_SPACING_X;
         int increaseButtonX = fieldX + FIELD_WIDTH + CONTROL_SPACING_X;
 
-        // Y inicial para la PRIMERA fila de controles
         int currentY = y + TOP_MARGIN;
 
-        // --- Fila 1: Canal ---
+        // Fila 1: Canal
         this.channelField = setupTextField(fieldX, currentY, String.valueOf(handler.getChannel()), this::validatePositiveInteger, this::onChannelChanged);
         this.decreaseChannelButton = setupDecreaseButton(decreaseButtonX, currentY, () -> updateIntValue(channelField, -1, 1));
         this.increaseChannelButton = setupIncreaseButton(increaseButtonX, currentY, () -> updateIntValue(channelField, 1, 1));
-        currentY += ROW_SPACING; // Incrementar Y para la siguiente fila
+        currentY += ROW_SPACING;
 
-        // --- Fila 2: Posición ---
+        // Fila 2: Posición
         this.positionField = setupTextField(fieldX, currentY, String.valueOf(handler.getPosition()), this::validatePositiveInteger, this::onPositionChanged);
         this.decreasePositionButton = setupDecreaseButton(decreaseButtonX, currentY, () -> updateIntValue(positionField, -1, 1));
         this.increasePositionButton = setupIncreaseButton(increaseButtonX, currentY, () -> updateIntValue(positionField, 1, 1));
         currentY += ROW_SPACING;
 
-        // --- Fila 3: Yaw ---
+        // Fila 3: Yaw
         this.yawField = setupTextField(fieldX, currentY, String.format("%.1f", handler.getYaw()), this::validateFloat, this::onYawChanged);
         this.decreaseYawButton = setupDecreaseButton(decreaseButtonX, currentY, () -> updateFloatValue(yawField, -15.0f, -1800.0f, 1800.0f));
         this.increaseYawButton = setupIncreaseButton(increaseButtonX, currentY, () -> updateFloatValue(yawField, 15.0f, -1800.0f, 1800.0f));
         currentY += ROW_SPACING;
 
-        // --- Fila 4: Pitch ---
+        // Fila 4: Pitch
         this.pitchField = setupTextField(fieldX, currentY, String.format("%.1f", handler.getPitch()), this::validatePitch, this::onPitchChanged);
         this.decreasePitchButton = setupDecreaseButton(decreaseButtonX, currentY, () -> updateFloatValue(pitchField, -5.0f, -90.0f, 90.0f));
         this.increasePitchButton = setupIncreaseButton(increaseButtonX, currentY, () -> updateFloatValue(pitchField, 5.0f, -90.0f, 90.0f));
         currentY += ROW_SPACING;
 
-        // --- Fila 5: Duración ---
+        // Fila 5: Roll (NUEVO)
+        this.rollField = setupTextField(fieldX, currentY, String.format("%.1f", handler.getRoll()), this::validateRoll, this::onRollChanged);
+        this.decreaseRollButton = setupDecreaseButton(decreaseButtonX, currentY, () -> updateFloatValue(rollField, -10.0f, -180.0f, 180.0f));
+        this.increaseRollButton = setupIncreaseButton(increaseButtonX, currentY, () -> updateFloatValue(rollField, 10.0f, -180.0f, 180.0f));
+        currentY += ROW_SPACING;
+
+        // Fila 6: Shake
+        this.shakeField = setupTextField(fieldX, currentY, String.format("%.1f", handler.getShake()), this::validatePositiveFloatMin0, this::onShakeChanged);
+        this.decreaseShakeButton = setupDecreaseButton(decreaseButtonX, currentY, () -> updateFloatValue(shakeField, -0.1f, 0.0f, 100.0f));
+        this.increaseShakeButton = setupIncreaseButton(increaseButtonX, currentY, () -> updateFloatValue(shakeField, 0.1f, 0.0f, 100.0f));
+        currentY += ROW_SPACING;
+
+        // Fila 7: Duración
         this.durationField = setupTextField(fieldX, currentY, String.format("%.1f", handler.getDuration()), this::validatePositiveFloatMin01, this::onDurationChanged);
         this.decreaseDurationButton = setupDecreaseButton(decreaseButtonX, currentY, () -> updateDoubleValue(durationField, -0.5, 0.1));
         this.increaseDurationButton = setupIncreaseButton(increaseButtonX, currentY, () -> updateDoubleValue(durationField, 0.5, 0.1));
         currentY += ROW_SPACING;
 
-        // --- Fila 6: Stay Duration ---
+        // Fila 8: Stay Duration
         this.stayDurationField = setupTextField(fieldX, currentY, String.format("%.1f", handler.getStayDuration()), this::validatePositiveFloatMin0, this::onStayDurationChanged);
         this.decreaseStayDurationButton = setupDecreaseButton(decreaseButtonX, currentY, () -> updateDoubleValue(stayDurationField, -0.5, 0.0));
         this.increaseStayDurationButton = setupIncreaseButton(increaseButtonX, currentY, () -> updateDoubleValue(stayDurationField, 0.5, 0.0));
         currentY += ROW_SPACING;
 
-        // --- Fila 7: Rotate To Next Toggle ---
-        int toggleX = x + this.backgroundWidth / 2 - TOGGLE_BUTTON_WIDTH / 2; // Centrar el botón toggle
+        // Fila 9: Rotate To Next Toggle
+        int toggleX = x + this.backgroundWidth / 2 - TOGGLE_BUTTON_WIDTH / 2;
         this.rotateToNextToggle = ButtonWidget.builder(getRotateButtonText(), (btn) -> toggleRotateToNext())
                 .dimensions(toggleX, currentY, TOGGLE_BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build();
         this.addDrawableChild(this.rotateToNextToggle);
         this.addSelectableChild(this.rotateToNextToggle);
-
-        // No es necesario añadir explícitamente los selectable child si se usa addDrawableChild
     }
 
     // --- Métodos auxiliares para crear widgets (sin cambios) ---
     private TextFieldWidget setupTextField(int x, int y, String initialValue, Predicate<String> predicate, Consumer<String> listener) {
-        TextFieldWidget field = new TextFieldWidget(this.textRenderer, x, y, FIELD_WIDTH, FIELD_HEIGHT, Text.of("")); // Usar FIELD_HEIGHT
+        TextFieldWidget field = new TextFieldWidget(this.textRenderer, x, y, FIELD_WIDTH, FIELD_HEIGHT, Text.of(""));
         field.setText(initialValue);
         field.setEditable(true);
         field.setTextPredicate(predicate);
         field.setChangedListener(listener);
         this.addDrawableChild(field);
-        // this.addSelectableChild(field); // addDrawableChild generalmente lo hace seleccionable
         return field;
     }
 
     private ButtonWidget setupDecreaseButton(int x, int y, Runnable action) {
         ButtonWidget button = ButtonWidget.builder(Text.of("-"), (btn) -> action.run())
-                .dimensions(x, y, BUTTON_WIDTH, BUTTON_HEIGHT) // Usar BUTTON_HEIGHT
+                .dimensions(x, y, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build();
         this.addDrawableChild(button);
-        // this.addSelectableChild(button);
         return button;
     }
 
     private ButtonWidget setupIncreaseButton(int x, int y, Runnable action) {
         ButtonWidget button = ButtonWidget.builder(Text.of("+"), (btn) -> action.run())
-                .dimensions(x, y, BUTTON_WIDTH, BUTTON_HEIGHT) // Usar BUTTON_HEIGHT
+                .dimensions(x, y, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build();
         this.addDrawableChild(button);
-        // this.addSelectableChild(button);
         return button;
     }
 
@@ -181,7 +186,43 @@ public class CameraPointScreen extends HandledScreen<CameraPointScreenHandler> {
         field.setText(String.format("%.1f", value));
     }
 
-    // --- Métodos para el Toggle Button (sin cambios) ---
+    private void onShakeChanged(String text) {
+        try {
+            float value = Float.parseFloat(text.replace(',', '.'));
+            value = MathHelper.clamp(value, 0.0f, 100.0f);
+            if (Math.abs(value - handler.getShake()) > 0.01f) {
+                if (!text.equals(String.format("%.1f", value)) && !text.equals(String.format("%.0f", value))) {
+                    shakeField.setText(String.format("%.1f", value));
+                }
+                handler.setShake(value);
+                sendValuesToServer();
+            }
+        } catch (NumberFormatException | NullPointerException e) {
+            if (!text.isEmpty() && !text.endsWith(".")) {
+                shakeField.setText(String.format("%.1f", MathHelper.clamp(handler.getShake(), 0.0f, 100.0f)));
+            }
+        }
+    }
+
+    // --- Roll ---
+    private void onRollChanged(String text) {
+        try {
+            float value = Float.parseFloat(text.replace(',', '.'));
+            value = MathHelper.clamp(value, -180.0f, 180.0f);
+            if (Math.abs(value - handler.getRoll()) > 0.01f) {
+                if (!text.equals(String.format("%.1f", value)) && !text.equals(String.format("%.0f", value))) {
+                    rollField.setText(String.format("%.1f", value));
+                }
+                handler.setRoll(value);
+                sendValuesToServer();
+            }
+        } catch (NumberFormatException | NullPointerException e) {
+            if (!text.isEmpty() && !text.equals("-") && !text.endsWith(".") && !text.equals("-.")) {
+                rollField.setText(String.format("%.1f", handler.getRoll()));
+            }
+        }
+    }
+
     private Text getRotateButtonText() {
         return Text.translatable(handler.shouldRotateToNext() ?
                 "gui.carrozatest.camera_point.rotate_enabled" :
@@ -195,14 +236,12 @@ public class CameraPointScreen extends HandledScreen<CameraPointScreenHandler> {
         sendValuesToServer();
     }
 
-    // --- Listeners de cambio y envío (sin cambios en lógica) ---
     private void onChannelChanged(String text) {
-        int value = parseInt(text, handler.getChannel()); // Usar valor actual como default en parseo
+        int value = parseInt(text, handler.getChannel());
         if (value >= 1 && value != handler.getChannel()) {
             handler.setChannel(value);
             sendValuesToServer();
         } else if (!text.isEmpty() && !text.equals("-") && value < 1) {
-            // Si el usuario escribe algo inválido, revertir al valor del handler
             channelField.setText(String.valueOf(handler.getChannel()));
         }
     }
@@ -216,7 +255,6 @@ public class CameraPointScreen extends HandledScreen<CameraPointScreenHandler> {
         }
     }
     private void onYawChanged(String text) {
-        // Permitir edición más libre, enviar el valor parseado
         try {
             float value = Float.parseFloat(text.replace(',', '.'));
             if (Math.abs(value - handler.getYaw()) > 0.01f) {
@@ -224,7 +262,6 @@ public class CameraPointScreen extends HandledScreen<CameraPointScreenHandler> {
                 sendValuesToServer();
             }
         } catch (NumberFormatException | NullPointerException e) {
-            // Si no es un número válido (y no está vacío o parcial), no hacer nada o revertir
             if (!text.isEmpty() && !text.equals("-") && !text.endsWith(".") && !text.equals("-.")) {
                 yawField.setText(String.format("%.1f", handler.getYaw()));
             }
@@ -233,10 +270,9 @@ public class CameraPointScreen extends HandledScreen<CameraPointScreenHandler> {
     private void onPitchChanged(String text) {
         try {
             float value = Float.parseFloat(text.replace(',', '.'));
-            value = MathHelper.clamp(value, -90.0f, 90.0f); // Clamp siempre
+            value = MathHelper.clamp(value, -90.0f, 90.0f);
             if (Math.abs(value - handler.getPitch()) > 0.01f) {
-                // Actualizar campo si se clampea antes de enviar
-                if (!text.equals(String.format("%.1f", value)) && !text.equals(String.format("%.0f", value))) { // Evitar bucle si ya está formateado
+                if (!text.equals(String.format("%.1f", value)) && !text.equals(String.format("%.0f", value))) {
                     pitchField.setText(String.format("%.1f", value));
                 }
                 handler.setPitch(value);
@@ -251,7 +287,7 @@ public class CameraPointScreen extends HandledScreen<CameraPointScreenHandler> {
     private void onDurationChanged(String text) {
         try {
             double value = Double.parseDouble(text.replace(',', '.'));
-            value = Math.max(0.1, value); // Asegurar mínimo
+            value = Math.max(0.1, value);
             if (Math.abs(value - handler.getDuration()) > 0.01) {
                 if (!text.equals(String.format("%.1f", value)) && !text.equals(String.format("%.0f", value))) {
                     durationField.setText(String.format("%.1f", value));
@@ -268,7 +304,7 @@ public class CameraPointScreen extends HandledScreen<CameraPointScreenHandler> {
     private void onStayDurationChanged(String text) {
         try {
             double value = Double.parseDouble(text.replace(',', '.'));
-            value = Math.max(0.0, value); // Asegurar mínimo
+            value = Math.max(0.0, value);
             if (Math.abs(value - handler.getStayDuration()) > 0.01) {
                 if (!text.equals(String.format("%.1f", value)) && !text.equals(String.format("%.0f", value))) {
                     stayDurationField.setText(String.format("%.1f", value));
@@ -283,12 +319,14 @@ public class CameraPointScreen extends HandledScreen<CameraPointScreenHandler> {
         }
     }
 
-    // Envía TODOS los valores actuales del handler al servidor (sin cambios)
+    // Envía TODOS los valores actuales del handler al servidor (ahora incluye roll)
     private void sendValuesToServer() {
         int channel = handler.getChannel();
         int position = handler.getPosition();
         float yaw = handler.getYaw();
         float pitch = handler.getPitch();
+        float roll = handler.getRoll(); // <--- NUEVO
+        float shake = handler.getShake();
         double duration = handler.getDuration();
         double stayDuration = handler.getStayDuration();
         boolean rotateToNext = handler.shouldRotateToNext();
@@ -299,6 +337,8 @@ public class CameraPointScreen extends HandledScreen<CameraPointScreenHandler> {
         buf.writeInt(position);
         buf.writeFloat(yaw);
         buf.writeFloat(pitch);
+        buf.writeFloat(roll); // <--- NUEVO, después de pitch
+        buf.writeFloat(shake);
         buf.writeDouble(duration);
         buf.writeDouble(stayDuration);
         buf.writeBoolean(rotateToNext);
@@ -309,30 +349,23 @@ public class CameraPointScreen extends HandledScreen<CameraPointScreenHandler> {
     // --- Renderizado ---
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        this.renderBackground(context); // Fondo oscuro estándar
-        super.render(context, mouseX, mouseY, delta); // Dibuja textura fondo, widgets, etc.
-        this.drawMouseoverTooltip(context, mouseX, mouseY); // Tooltips de widgets
+        this.renderBackground(context);
+        super.render(context, mouseX, mouseY, delta);
+        this.drawMouseoverTooltip(context, mouseX, mouseY);
 
-        // --- Dibuja las etiquetas CENTRADAS encima de los campos ---
         int x = (this.width - this.backgroundWidth) / 2;
-        int labelX = x + this.backgroundWidth / 2; // X para centrar etiquetas
+        int labelX = x + this.backgroundWidth / 2;
 
-        // Dibujar cada etiqueta usando la posición Y del widget correspondiente
-        // Es más robusto que recalcular currentY aquí
         drawCenteredLabel(context, Text.translatable("gui.carrozatest.camera_point.channel"), labelX, channelField.getY() + LABEL_Y_OFFSET);
         drawCenteredLabel(context, Text.translatable("gui.carrozatest.camera_point.position"), labelX, positionField.getY() + LABEL_Y_OFFSET);
         drawCenteredLabel(context, Text.translatable("gui.carrozatest.camera_point.yaw"), labelX, yawField.getY() + LABEL_Y_OFFSET);
         drawCenteredLabel(context, Text.translatable("gui.carrozatest.camera_point.pitch"), labelX, pitchField.getY() + LABEL_Y_OFFSET);
+        drawCenteredLabel(context, Text.translatable("gui.carrozatest.camera_point.roll"), labelX, rollField.getY() + LABEL_Y_OFFSET); // <--- NUEVO
+        drawCenteredLabel(context, Text.translatable("gui.carrozatest.camera_point.shake"), labelX, shakeField.getY() + LABEL_Y_OFFSET);
         drawCenteredLabel(context, Text.translatable("gui.carrozatest.camera_point.duration"), labelX, durationField.getY() + LABEL_Y_OFFSET);
         drawCenteredLabel(context, Text.translatable("gui.carrozatest.camera_point.stay_duration"), labelX, stayDurationField.getY() + LABEL_Y_OFFSET);
         drawCenteredLabel(context, Text.translatable("gui.carrozatest.camera_point.rotate_to_next"), labelX, rotateToNextToggle.getY() + LABEL_Y_OFFSET);
-
-        // El título de la pantalla (InventoryScreen) se dibuja por defecto por super.render,
-        // si quieres un título diferente o en otra posición, deshabilita eso y dibújalo aquí.
-        // Ejemplo: context.drawTextWithShadow(textRenderer, title, x + 8, y + 6, 4210752);
     }
-
-    // Método auxiliar para dibujar etiquetas centradas
     private void drawCenteredLabel(DrawContext context, Text text, int centerX, int y) {
         context.drawTextWithShadow(textRenderer, text, centerX - textRenderer.getWidth(text) / 2, y, LABEL_COLOR);
     }
@@ -342,11 +375,10 @@ public class CameraPointScreen extends HandledScreen<CameraPointScreenHandler> {
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         int x = (width - backgroundWidth) / 2;
         int y = (height - backgroundHeight) / 2;
-        // Dibuja la textura de fondo personalizada usando las dimensiones correctas
         context.drawTexture(TEXTURE, x, y, 0, 0, this.backgroundWidth, this.backgroundHeight, this.backgroundWidth, this.backgroundHeight);
     }
 
-    // --- Validación y Parseo (sin cambios) ---
+    // --- Validación y Parseo ---
     private boolean validatePositiveInteger(String text) {
         if (text.isEmpty() || text.equals("-")) return true;
         try {
@@ -359,21 +391,30 @@ public class CameraPointScreen extends HandledScreen<CameraPointScreenHandler> {
     private boolean validateFloat(String text) {
         if (text.isEmpty() || text.equals("-") || text.endsWith(".") || text.equals("-.")) return true;
         try {
-            Float.parseFloat(text.replace(',', '.')); // Usar replace aquí también
+            Float.parseFloat(text.replace(',', '.'));
             return true;
-        } catch (NumberFormatException | NullPointerException e) { // Capturar NullPointer por si acaso
+        } catch (NumberFormatException | NullPointerException e) {
             return false;
         }
     }
     private boolean validatePitch(String text) {
-        return validateFloat(text); // Clamp se hace en el listener
+        return validateFloat(text);
+    }
+    private boolean validateRoll(String text) { // <--- NUEVO
+        if (text.isEmpty() || text.equals("-") || text.endsWith(".") || text.equals("-.")) return true;
+        try {
+            float value = Float.parseFloat(text.replace(',', '.'));
+            return value >= -180.0f && value <= 180.0f;
+        } catch (NumberFormatException | NullPointerException e) {
+            return false;
+        }
     }
     private boolean validatePositiveFloatMin01(String text) {
-        if (text.isEmpty() || text.endsWith(".")) return true; // Permitir "." al final
-        if (text.equals("-")) return false; // No permitir empezar con "-"
+        if (text.isEmpty() || text.endsWith(".")) return true;
+        if (text.equals("-")) return false;
         try {
-            double value = Double.parseDouble(text.replace(',', '.')); // Usar double para parsear
-            return value >= 0.0; // Mínimo 0.0, el ajuste a 0.1 se hace en listener
+            double value = Double.parseDouble(text.replace(',', '.'));
+            return value >= 0.0;
         } catch (NumberFormatException | NullPointerException e) {
             return false;
         }
@@ -410,23 +451,18 @@ public class CameraPointScreen extends HandledScreen<CameraPointScreenHandler> {
         }
     }
 
-    // --- Otros métodos ---
     @Override
     public void close() {
-        // Podrías llamar a sendValuesToServer aquí por seguridad, pero es opcional
         super.close();
     }
 
     @Override
     public boolean shouldPause() {
-        return false; // Mantener el juego corriendo
+        return false;
     }
 
-    // Opcional: Sobrescribir para quitar el título del inventario si no lo quieres
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
         // No llamar a super.drawForeground(context, mouseX, mouseY);
-        // Si quieres un título personalizado, dibújalo aquí:
-        // context.drawText(this.textRenderer, this.title, this.titleX, this.titleY, 4210752, false);
     }
 }

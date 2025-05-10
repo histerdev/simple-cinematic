@@ -26,7 +26,9 @@ public class SimplecinematicClient implements ClientModInitializer {
         HandledScreens.register(ModScreenHandlers.CAMERA_POINT_SCREEN_HANDLER, CameraPointScreen::new);
         ClientPackets.registerPackets();
         ClientTickEvents.END_CLIENT_TICK.register(this::onClientTick);
-
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            CameraManager.onTick();
+        });
     }
     private void onClientTick(MinecraftClient client) {
         // Este código se ejecuta una vez por tick de juego en el cliente
